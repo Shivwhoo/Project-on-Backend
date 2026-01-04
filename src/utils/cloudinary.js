@@ -1,4 +1,4 @@
-import {v2 as cloudinary} from "cloudinary"
+import {v2 as cloudinary,} from "cloudinary"
 import fs from "fs" 
 
 
@@ -9,6 +9,15 @@ cloudinary.config({
         api_secret: process.env.CLOUDINARY_API_SECRET
  
     });
+
+
+const getPublicIdFromUrl = (url) => {
+  if (!url) return null;
+
+  // works with folders also
+  const match = url.match(/upload\/(?:v\d+\/)?(.+)\.[a-z]+$/i);
+  return match ? match[1] : null;
+};
 
 
 const uploadOnCloudinary = async (localFilePath) => {
@@ -32,6 +41,7 @@ const uploadOnCloudinary = async (localFilePath) => {
 const deleteFromCloudinary=async (avatarUrl)=>{
         if(!avatarUrl) return
         const publicId=getPublicIdFromUrl(avatarUrl)
+        if (!publicId) return;
         await cloudinary.uploader.destroy(publicId)
 }
 
