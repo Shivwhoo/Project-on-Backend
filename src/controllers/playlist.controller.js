@@ -20,7 +20,6 @@ const createPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(400,"Playlist description is required")
     }
 
-    video
     const playlist= await Playlist.create({
         name,
         description,
