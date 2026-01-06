@@ -8,10 +8,78 @@ import {asyncHandler} from "../utils/asyncHandler.js"
 
 const getChannelStats = asyncHandler(async (req, res) => {
     // TODO: Get the channel stats like total video views, total subscribers, total videos, total likes etc.
+
+    const channelId = req.user._id
+    const videoStats = await Video.aggregate([
+        {
+            $match: {
+                owner: channelId
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                totalVideos: { $sum: 1 },
+                totalViews: { $sum: "$views" }
+            }
+        }
+    ])
+
+    const totalSubscribers = await Subscription.countDocuments({
+        channel: channelId
+    })
+
+    const totalLikes = await Like.aggregate([
+        {
+            $lookup: {
+                from: "videos",
+                localField: "video",
+                foreignField: "_id",
+                as: "video"
+            }
+        },
+        {
+            $unwind: "$video"
+        },
+        {
+            $match: {
+                "video.owner": channelId
+            }
+        },
+        {
+            $count: "likes"
+        }
+    ])
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                totalVideos: videoStats[0]?.totalVideos || 0,
+                totalViews: videoStats[0]?.totalViews || 0,
+                totalSubscribers,
+                totalLikes: totalLikes[0]?.likes || 0
+            },
+            "Channel stats fetched successfully"
+        )
+    )
+    
 })
 
 const getChannelVideos = asyncHandler(async (req, res) => {
     // TODO: Get all the videos uploaded by the channel
+
+    const channelId=req.user._id
+
+    const video= (await Video.find({owner:channelId})).sort({createdAt:-1})
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            videos,
+            "Channel videos fetched successfully"
+        )
+    )
 })
 
 export {
