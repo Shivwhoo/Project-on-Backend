@@ -65,16 +65,16 @@ const publishAVideo = asyncHandler(async (req, res) => {
         throw new ApiError(400,"Unauthorized access")
     }
 
-    const videoLocalPath=req.files?.video?.[0]?.path
+    const videoFile=req.files?.videoFile?.[0]?.path
     const thumbnailLocalPath=req.files?.thumbnail?.[0]?.path
-    if (!videoLocalPath) {
+    if (!videoFile) {
             throw new ApiError(400, "Video file is required")
     }
     if (!thumbnailLocalPath) {
             throw new ApiError(400, "Thumbnail file is required")
     }
 
-    const video= await uploadOnCloudinary(videoLocalPath)
+    const video= await uploadOnCloudinary(videoFile)
     if(!video){
         throw new ApiError(400,"Video file is required")
     }
@@ -92,8 +92,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
         title:title,
         description:description,
         duration:video.duration || 0.0,
-        views,
-        isPublished,
+        views:0,
+        isPublished:true,
         owner:user._id
     })
 
@@ -138,7 +138,13 @@ const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
 
+
+    if(!mongoose.isValidObjectId(videoId)){
+        throw new ApiError(404,"Video id is invalid")
+    }
+
     const user=req.user
+    
     const video=await Video.findById(videoId)
 
     if (!video) {
@@ -150,13 +156,15 @@ const updateVideo = asyncHandler(async (req, res) => {
         throw new ApiError(400,"Unauthorized access")
     }
 
-    const updatedVideoLocalPath=req.file?.path
+    const updatedvideoFile=req.files?.videoFile?.[0]?.path
 
-    if(!updatedVideoLocalPath){
+    const updatedThumbnail=req.files?.thumbnail?.[0]?.path
+
+    if(!updatedvideoFile){
         throw new ApiError(400,"updated video is required")
     }
 
-    const newVideo=await uploadOnCloudinary(updatedVideoLocalPath)
+    const newVideo=await uploadOnCloudinary(updatedvideoFile)
 
     if(!newVideo || !newVideo.url){
         throw new ApiError(400,"Error while uploading the updated video")
@@ -212,6 +220,10 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+
+    if(!mongoose.isValidObjectId(videoId)){
+        throw new ApiError(400,"Video id not correct")
+    }
 
     const video= await Video.findById(videoId)
 

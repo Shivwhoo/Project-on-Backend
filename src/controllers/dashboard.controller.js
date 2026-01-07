@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 import {Video} from "../models/video.model.js"
-import {Subscription} from "../models/subscription.model.js"
+import {Subscription} from "../models/subscriptions.model.js"
 import {Like} from "../models/like.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
@@ -71,7 +71,10 @@ const getChannelVideos = asyncHandler(async (req, res) => {
 
     const channelId=req.user._id
 
-    const video= (await Video.find({owner:channelId})).sort({createdAt:-1})
+    const videos = await Video
+    .find({ owner: channelId })
+    .sort({ createdAt: -1 })
+
 
     return res.status(200).json(
         new ApiResponse(

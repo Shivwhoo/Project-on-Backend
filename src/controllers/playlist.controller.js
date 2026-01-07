@@ -32,7 +32,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
     }
 
     return res.status(201)
-    .json(201,playlist,"Playlist created successfully.")
+    .json(new ApiResponse(201,playlist,"Playlist created successfully."))
 
 
 })
@@ -74,45 +74,53 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 })
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
-    const {playlistId, videoId} = req.params
+    const { playlistId, videoId } = req.params
+    const userId = req.user._id
 
-    if(!mongoose.isValidObjectId(playlistId)){
-        throw new ApiError(400,"Invalid playlist id")
-    }
-    if(!mongoose.isValidObjectId(videoId)){
-        throw new ApiError(400,"Invalid video id")
+    if (!mongoose.isValidObjectId(playlistId)) {
+        throw new ApiError(400, "Invalid playlist id")
     }
 
-    const playlist= await Playlist.findById(playlistId)
-
-
-    if (playlist.owner.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, "Unauthorized access")
-    }
-    
-
-    if(!playlist){
-        throw new ApiError(404,"Playlist not found")
+    if (!mongoose.isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video id")
     }
 
-    const video=await Video.findById(videoId)
+    const playlist = await Playlist.findById(playlistId)
 
-    if(!video){
-        throw new ApiError(404,"Video not found"
-        )
+    if (!playlist) {
+        throw new ApiError(404, "Playlist not found")
     }
 
-    if (playlist.videos.includes(videoId)) {
-    throw new ApiError(400, "Video already in playlist")
+    if (playlist.owner.toString() !== userId.toString()) {
+        throw new ApiError(403, "Unauthorized access")
+    }
+
+    const video = await Video.findById(videoId)
+
+    if (!video) {
+        throw new ApiError(404, "Video not found")
+    }
+
+    const isAlreadyAdded = playlist.videos.some(
+        (vid) => vid.toString() === videoId
+    )
+
+    if (isAlreadyAdded) {
+        throw new ApiError(400, "Video already in playlist")
     }
 
     playlist.videos.push(videoId)
-    await playlist.save({validateBeforeSave:false})
+    await playlist.save({ validateBeforeSave: false })
 
-    return res.status(201).
-    json(201,playlist,"Video added to the playlist successfully")
-
+    return res.status(201).json(
+        new ApiResponse(
+            201,
+            playlist,
+            "Video added to the playlist successfully"
+        )
+    )
 })
+
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     const {playlistId, videoId} = req.params
@@ -127,7 +135,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
 
     const playlist= await Playlist.findById(playlistId)
 
-    if(!playlist.owner.toString()!==req.user._id.toString()){
+    if(playlist.owner.toString()!==req.user._id.toString()){
         throw new ApiError(403,"Unauthorized access")
     }
 

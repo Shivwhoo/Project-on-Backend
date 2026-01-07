@@ -7,8 +7,9 @@ const router= Router()
 router.use(verifyJWT)
 
 router
-    .route("/c/:channelId")
-    .get(getSubscribedChannels)
+    .route("/c/:subscriberId")
+router.route("/c/:channelId")
+    .get(getUserChannelSubscribers)
     .post(toggleSubscription);
 
 router.route("/u/:subscriberId").get(getUserChannelSubscribers);

@@ -1,6 +1,7 @@
 import mongoose, {isValidObjectId} from "mongoose"
 import {Like} from "../models/like.model.js"
 import {Tweet} from "../models/tweet.model.js"
+import { Comment } from "../models/comment.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
@@ -15,7 +16,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     }
     const userId=req.user._id
 
-    const existingLike=await Like.findOne({video:videoId,likedBy:userID})
+    const existingLike=await Like.findOne({video:videoId,likedBy:userId})
 
     let isLiked;
     if(existingLike){
@@ -89,12 +90,37 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 )
 
 const getLikedVideos = asyncHandler(async (req, res) => {
-    //TODO: get all liked videos
-    const user=req.user
-    const likes=await Like.find({likedBy:user._id})
-    return res.status(200)
-    .json(new ApiResponse(203,likes,"Like fetched successfully"))
+    const userId = req.user._id
+
+    const likedVideos = await Like.aggregate([
+        {
+            $match: {
+                likedBy: userId
+            }
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "video",
+                foreignField: "_id",
+                as: "video"
+            }
+        },
+        {
+            $unwind: "$video"
+        },
+        {
+            $replaceRoot: {
+                newRoot: "$video"
+            }
+        }
+    ])
+
+    return res.status(200).json(
+        new ApiResponse(200, likedVideos, "Liked videos fetched successfully")
+    )
 })
+
 
 export {
     toggleCommentLike,
